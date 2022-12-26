@@ -1,27 +1,14 @@
-import 'package:flutter/material.dart'; 
+import 'package:flutter/material.dart';
+import 'package:flutter_fav_food/src/screens/accueil/list_dish_user.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'custom_theme.dart';
-import 'screens/accueil/accueil_enseignant.dart';
-import 'screens/accueil/accueil_etudiant.dart';
 import 'screens/accueil/add_dish.dart';
 import 'screens/accueil/home_screen.dart';
-import 'screens/accueil/list_dish.dart';
+import 'screens/accueil/list_dish_admin.dart';
 import 'screens/authentification/first_screen.dart';
-import 'screens/responsable_de_stage/calander.dart';
-import 'screens/responsable_de_stage/dashboard.dart';
-import 'screens/responsable_de_stage/gerer_document.dart';
-import 'screens/responsable_de_stage/gerer_liste_des_juries_list.dart';
-import 'screens/responsable_de_stage/gerer_sujets_pfe.dart';
-import 'screens/responsable_de_stage/gerer_etudiant.dart';
-import 'screens/responsable_de_stage/gerer_enseignants.dart';
 import 'screens/authentification/authentification.dart';
-import 'screens/authentification/inscription.dart';
-import 'screens/subjects/detail_sujet.dart';
-import 'screens/subjects/proposer_sujet.dart';
-import 'screens/subjects/consulter_planning.dart';
-import 'screens/etudiant/liste_des_sujets.dart';
-import 'screens/enseignant/gerer_demande_des_sujets.dart';
+import 'screens/authentification/inscription.dart'; 
 import 'settings/settings_controller.dart';
 import 'settings/settings_view.dart';
 
@@ -97,52 +84,14 @@ class MyApp extends StatelessWidget {
                   case Inscription.routeName:
                     return const Inscription();
                   case HomeScreen.routeName:
-                    return const HomeScreen();
+                    final args = routeSettings.arguments as HomeScreen;
+                    return HomeScreen(user: args.user);
                   case AddDish.routeName:
                     return const AddDish();
-                  case ListDish.routeName:
-                    return const ListDish();
-                  case AccueilEnseignant.routeName:
-                    final args = routeSettings.arguments as AccueilEnseignant;
-                    return  AccueilEnseignant(enseignant: args.enseignant);
-                  case AccueilEtudiant.routeName:
-                    final args = routeSettings.arguments as AccueilEtudiant;
-                    return AccueilEtudiant(
-                      etudiant: args.etudiant,
-                    );
-                  case ConsulterPlanning.routeName:
-                    return const ConsulterPlanning();
-                  case GererDemandeDesSujetsPFE.routeName:
-                    return const GererDemandeDesSujetsPFE();
-                  case Dashboard.routeName:
-                    return const Dashboard();
-                  case GererSujetsPFE.routeName:
-                    return const GererSujetsPFE();
-                  case GererDocument.routeName:
-                    return const GererDocument();
-                  case GererEnseignant.routeName:
-                    return const GererEnseignant();
-                  case Calander.routeName:
-                    return const Calander();
-                  case GererEtudiant.routeName:
-                    return const GererEtudiant();
-                  case GererListeDesJuries.routeName:
-                    return const GererListeDesJuries();
-                  case ProposerSujet.routeName:
-                    final args = routeSettings.arguments as ProposerSujet;
-                    return ProposerSujet(
-                      fonction: args.fonction,
-                      enseignant: args.enseignant,
-                      etudiant: args.etudiant,
-                    );
-                  case ListeDesSujets.routeName:
-                    return const ListeDesSujets();
-                  case DetailSujet.routeName:
-                    final args = routeSettings.arguments as DetailSujet;
-                    return DetailSujet(
-                      doc: args.doc,
-                      fonction: args.fonction,
-                    );
+                  case ListDishAdmin.routeName:
+                    return const ListDishAdmin();
+                  case ListDishUser.routeName:
+                    return const ListDishUser(); 
                   default:
                     return const FirstScreen();
                 }

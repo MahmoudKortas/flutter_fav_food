@@ -4,8 +4,8 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../helpers/api_service.dart';
-import '../../models/document.dart';
+import '../../helpers/db.dart';
+import '../../models/dish.dart';
 import '../../resize_widget.dart';
 
 class AddDish extends StatefulWidget {
@@ -16,20 +16,21 @@ class AddDish extends StatefulWidget {
 }
 
 class _AddDishState extends State<AddDish> {
-  late List<Document>? _document = [];
-  var _enseignant;
-  // var _listeEnseignant = [''];
-  // String? value;
+  List<Dish>? _dishs;
   File? _image;
   final picker = ImagePicker();
-  Document document = Document();
-  final dateController = TextEditingController();
+  Dish dish = Dish();
   final descriptionController = TextEditingController();
-  final titreController = TextEditingController();
+  final nomController = TextEditingController();
+  MyDb mydb = MyDb();
   @override
   void initState() {
     super.initState();
-    // getData();
+    mydb.open().then((value) {
+      log("val::$value");
+      // mydb.getDishs();
+      getData();
+    });
   }
 
   @override
@@ -46,60 +47,36 @@ class _AddDishState extends State<AddDish> {
             context: context,
             child: Column(
               children: [
-                /*TextFormField(
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.calendar_month),
-                    hintText: 'Saisir date de depot',
-                  ),
-                  validator: (String? value) {
-                    if (value == null || value.isEmpty) {
-                      return 'entrez votre login';
-                    }
-                    return null;
-                  },
-                  controller: dateController,
-                ),*/
                 TextFormField(
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.description),
-                    hintText: 'Saisir titre',
+                    hintText: 'Saisir nom du plat',
                   ),
                   validator: (String? value) {
                     if (value == null || value.isEmpty) {
-                      return 'entrez le titre du sujet';
+                      return 'entrez le nom du plat';
                     }
                     return null;
                   },
-                  controller: titreController,
+                  controller: nomController,
                 ),
                 TextFormField(
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.description),
-                    hintText: 'Saisir description',
+                    hintText: 'Saisir description du plat',
                   ),
                   validator: (String? value) {
                     if (value == null || value.isEmpty) {
-                      return 'entrez la description du sujet';
+                      return 'entrez la description du plat';
                     }
                     return null;
                   },
                   controller: descriptionController,
                 ),
-                /*DropdownButton<String>(
-                  hint: const Text("choisir l'encadrant"),
-                  value: value,
-                  iconSize: 36,
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                  items: _listeEnseignant
-                      .map(buildMenuItem)
-                      .toList(), //_items.map(buildMenuItem).toList(),
-                  onChanged: (value) => setState(() => this.value = value),
-                  borderRadius: const BorderRadius.all(Radius.circular(10.0)),
-                ),*/
                 TextButton(onPressed: getImage, child: _buildImage()),
                 ElevatedButton(
                   // ignore: avoid_print
-                  onPressed: () => addDocument(),
+                  onPressed: () => addDish(),
                   child: const Text("Ajouter"),
                 ),
                 /*_document == null
@@ -107,25 +84,29 @@ class _AddDishState extends State<AddDish> {
                         child: CircularProgressIndicator(),
                       )
                     :*/
-                _document!.isEmpty
-                    ? const Text("aucun document existe")
+                _dishs == null
+                    ? const Text("aucun plat existe")
                     : ListView.builder(
                         physics: const NeverScrollableScrollPhysics(),
                         shrinkWrap: true,
-                        itemCount: _document!.length,
+                        itemCount: _dishs?.length,
                         itemBuilder: (context, index) {
                           return Card(
                             child: ListTile(
-                                title: Text(_document![index].titre.toString()),
-                                subtitle: Text(
-                                    _document![index].description.toString()),
-                                trailing: const Icon(Icons.more_vert),
-                                // isThreeLine: true,
-                                onTap: () => dialog(context,
-                                    _document![index])),
+                              title: Text(_dishs![index].name.toString()),
+                              subtitle:
+                                  Text(_dishs![index].description.toString()),
+                              trailing: const Icon(Icons.more_vert),
+                              // isThreeLine: true,
+                              /* onTap: () => dialog(
+                                context,
+                                _document![index],
+                              ),*/
+                            ),
                           );
                         },
-                      ) /*Card(
+                      )
+                /*Card(
                   child: ListTile(
                       /*leading: const CircleAvatar(
                       foregroundImage:
@@ -189,7 +170,7 @@ class _AddDishState extends State<AddDish> {
     );
   }
 
-  Future<String?> dialog(BuildContext context, Document document) {
+  /* Future<String?> dialog(BuildContext context, Document document) {
     return showDialog<String>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
@@ -197,7 +178,8 @@ class _AddDishState extends State<AddDish> {
         content: SingleChildScrollView(
           child: Column(
             children: [
-              Image.network("http://10.0.2.2:8080/api/document/image/${document.idDoc}"),
+              Image.network(
+                  "http://10.0.2.2:8080/api/document/image/${document.idDoc}"),
 
               // Image.asset("assets/images/logo-epi.png"),
             ],
@@ -216,8 +198,8 @@ class _AddDishState extends State<AddDish> {
             onPressed: () async {
               log(document.idDoc.toString());
               var _documentt;
-              _documentt =
-                  await ApiService().deleteDocument(id: document.idDoc.toString());
+              _documentt = await ApiService()
+                  .deleteDocument(id: document.idDoc.toString());
               log("_documentt::$_documentt");
               // getData();
               Navigator.pop(context, 'Supprimer');
@@ -232,34 +214,32 @@ class _AddDishState extends State<AddDish> {
       ),
     );
   }
-
-  /*void getData() async {
-    _enseignant = await ApiService().getEnseignant();
-    _listeEnseignant.clear();
-    _enseignant
-        .map((l) => {_listeEnseignant.add(l.nom + ' ' + l.prenom)})
-        .toList();
-    //await ApiService().updateEtudiants("3");
-    //await ApiService().deleteEtudiants("17");
-    // await ApiService().addEtudiants();
-    // await ApiService().addDocument();
-    //await ApiService().addEnseignant();
-
-    _document = await ApiService().getDocument();
-
-    //log("_document::$_document");
+*/
+  void getData() async {
+    _dishs = await mydb.getDishs();
     Future.delayed(const Duration(seconds: 0)).then((value) => setState(() {}));
   }
-*/
-  addDocument() async {
-    document.description=descriptionController.text;
-    document.titre=titreController.text;
-    document.proprietaire="value";
-    document.datedepot= DateTime.now().toIso8601String();
-    document.photo="e";
-    await ApiService().addDocument(document: document, filepath: _image!.path);
 
-    // getData();
+  addDish() async {
+    dish.description = descriptionController.text;
+    dish.name = nomController.text;
+    mydb.db.rawInsert(
+        "INSERT INTO food (name, description, img_path) VALUES (?, ?, ?);",
+        [dish.name, dish.description, _image?.path]).then(
+      (value) {
+        if (value != 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("New dish Added"),
+            ),
+          );
+          /* Navigator.pushNamed(
+                                    context,
+                                    Authentification.routeName,
+                                  );*/
+        }
+      },
+    );
   }
 
   DropdownMenuItem<String> buildMenuItem(String item) => DropdownMenuItem(

@@ -3,14 +3,12 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import '../../color_hex.dart';
-import '../../helpers/api_service.dart';
+import '../../color_hex.dart'; 
+import '../../helpers/db.dart';
+import '../../models/user.dart';
 import '../../resize_widget.dart';
-import '../../size_config.dart';
-import '../accueil/accueil_enseignant.dart';
-import '../accueil/accueil_etudiant.dart';
-import '../accueil/home_screen.dart';
-import '../responsable_de_stage/dashboard.dart';
+import '../../size_config.dart'; 
+import '../accueil/home_screen.dart'; 
 import 'inscription.dart';
 
 /// Displays detailed information about a SampleItem.
@@ -29,10 +27,14 @@ class _AuthentificationState extends State<Authentification> {
   var _enseignant;
   var _etudiant;
   var _responsable;
+  MyDb mydb = MyDb();
   @override
   void initState() {
     super.initState();
-    getData();
+    // mydb.deleteDatabase("/data/user/0/com.testapp.flutter.testapp/databases/food.db");
+    mydb.open().then((value) => mydb.getUsers());
+
+    // getData();
   }
 
   @override
@@ -103,21 +105,28 @@ class _AuthentificationState extends State<Authentification> {
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             // Validate will return true if the form is valid, or false if
                             // the form is invalid.
                             /*if (_formKey.currentState!.validate()) {
                           // Process data.
                         }*/
+                            var user = await mydb.db.query('users',
+                                where: 'login = ? and password=?',
+                                whereArgs: [
+                                  loginController.text,
+                                  motDePasseController.text
+                                ]);
+                            User u = User.fromJson(user.first);
+                            //getting student data with roll no.
+                            log("user::$u");
                             log("signin ${loginController.text} ${motDePasseController.text}");
-
                             /*verificationInscription(
                                 login: loginController.text,
                                 motDepasse: motDePasseController.text);*/
-                            Navigator.restorablePushNamed(
-                              context,
-                              HomeScreen.routeName,
-                            );
+                            Navigator.pushNamed(
+                                context, HomeScreen.routeName,
+                                arguments: HomeScreen(user: u));
                           },
                           child: const Text('Connexion'),
                         ),
@@ -149,47 +158,7 @@ class _AuthentificationState extends State<Authentification> {
       ),
     );
   }
+ 
 
-  void getData() async {
-    _responsable = await ApiService().getResponsable();
-    _etudiant = await ApiService().getEtudiants();
-    _enseignant = await ApiService().getEnseignant();
-    log("_responsable::$_responsable");
-    log("_etudiant::$_etudiant");
-    log("_enseignant::$_enseignant");
-  }
-
-  void verificationInscription({String? login = "", String? motDepasse = ""}) {
-    getData();
-    log("+");
-
-    for (var responsable in _responsable) {
-      log(".");
-      if (responsable.login == login && responsable.motdepasse == motDepasse) {
-        Navigator.restorablePushNamed(
-          context,
-          Dashboard.routeName,
-        );
-      }
-    }
-    for (var etudiant in _etudiant) {
-      log("-");
-      if (etudiant.login == login && etudiant.motdepasse == motDepasse) {
-        Navigator.pushNamed(
-          context,
-          AccueilEtudiant.routeName,
-          arguments: AccueilEtudiant(
-            etudiant: etudiant,
-          ),
-        );
-      }
-    }
-    for (var enseignant in _enseignant) {
-      log("_");
-      if (enseignant.login == login && enseignant.motdepasse == motDepasse) {
-        Navigator.pushNamed(context, AccueilEnseignant.routeName,
-            arguments: AccueilEnseignant(enseignant: enseignant));
-      }
-    }
-  }
+ 
 }

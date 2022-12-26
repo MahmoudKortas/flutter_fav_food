@@ -1,6 +1,8 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_fav_food/src/screens/authentification/authentification.dart';
+import '../../helpers/db.dart';
 import '../../resize_widget.dart';
 
 /// Displays detailed information about a SampleItem.
@@ -14,24 +16,24 @@ class Inscription extends StatefulWidget {
 class _InscriptionState extends State<Inscription> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final _items = ['Admin', 'User'];
- 
-  String? domaineValue; 
-  
+
+  String? permissionValue;
+
   final loginController = TextEditingController();
   final motDePasseController = TextEditingController();
-
-  final domaineController = TextEditingController();  
-
+  final domaineController = TextEditingController();
+  MyDb mydb = MyDb();
   @override
   void initState() {
     super.initState();
+    mydb.open().then((value) => mydb.getUsers());
     // getData();
   }
 
   @override
   void dispose() {
     // Clean up the controller when the widget is disposed.
-    
+
     loginController.dispose();
     motDePasseController.dispose();
     domaineController.dispose();
@@ -92,13 +94,13 @@ class _InscriptionState extends State<Inscription> {
                       ),
                       DropdownButton<String>(
                         hint: const Text("Permission"),
-                        value: domaineValue,
+                        value: permissionValue,
                         iconSize: 36,
                         icon: const Icon(Icons.arrow_drop_down,
                             color: Colors.black),
                         items: _items.map(buildMenuItem).toList(),
                         onChanged: (value) =>
-                            setState(() => domaineValue = value),
+                            setState(() => permissionValue = value),
                         borderRadius:
                             const BorderRadius.all(Radius.circular(10.0)),
                       ),
@@ -106,37 +108,28 @@ class _InscriptionState extends State<Inscription> {
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
                         child: ElevatedButton(
                           onPressed: () {
-                            log("${loginController.text} ${motDePasseController.text} $domaineValue  ");
-                            /*addEnseignant(
-                                    nom: nomController.text,
-                                    prenom: prenomController.text,
-                                    telephone: telephoneController.text,
-                                    adresse: adresseController.text,
-                                    login: loginController.text,
-                                    motDePasse: motDePasseController.text,
-                                    domaine: domaineValue)
-                           
-                                     addStudent(
-                                        nom: nomController.text,
-                                        prenom: prenomController.text,
-                                        telephone: telephoneController.text,
-                                        adresse: adresseController.text,
-                                        login: loginController.text,
-                                        motDePasse: motDePasseController.text,
-                                        diplome: diplomeValue,
-                                        departement: departementValue,
-                                        niveau: niveauValue,
-                                        specialite: specialiteValue)*/
-                    
-                            // Validate will return true if the form is valid, or false if
-                            // the form is invalid.
-                            /*if (_formKey.currentState!.validate()) {
-                          // Process data.
-                        }*/
-                            /*Navigator.restorablePushNamed(
-                                context, Authentification.routeName);*/
-
-                            //
+                            log("${loginController.text} ${motDePasseController.text} $permissionValue  ");
+                            mydb.db.rawInsert(
+                                "INSERT INTO users (login, password, permission) VALUES (?, ?, ?);",
+                                [
+                                  loginController.text,
+                                  motDePasseController.text,
+                                  permissionValue
+                                ]).then(
+                              (value) {
+                                if (value != 0) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("New user Added"),
+                                    ),
+                                  );
+                                  Navigator.pushNamed(
+                                    context,
+                                    Authentification.routeName,
+                                  );
+                                }
+                              },
+                            );
                           },
                           child: const Text("S'inscrire"),
                         ),
@@ -151,82 +144,6 @@ class _InscriptionState extends State<Inscription> {
       ),
     );
   }
-
-  /*void getData() async {
-    _pfe = await ApiService().getPFE();
-    _document = await ApiService().getDocument();
-    _soutenance = await ApiService().getSoutenance();
-    log("_soutenance::$_soutenance");
-    log("pfe::$_pfe");
-    log("_document::$_document");
-  }
-  /*void getData() async {
-    //await ApiService().updateEtudiants("3");
-    //await ApiService().deleteEtudiants("17");
-    _etudiant = await ApiService().getEtudiants();
-    _enseignant = await ApiService().getEnseignant();
-    log("_etudiant::$_etudiant");
-    log("_enseignant::$_enseignant");
-  }*/
-
-  void addStudent({
-    String? nom = "",
-    String? prenom = "",
-    String? telephone = "",
-    String? adresse = "",
-    String? login = "",
-    String? motDePasse = "",
-    String? diplome = "",
-    String? departement = "",
-    String? niveau = "",
-    String? specialite = "",
-  }) async {
-    log("addStudent");
-    await ApiService().addEtudiants(
-        nom: nom,
-        prenom: prenom,
-        telephone: telephone,
-        adresse: adresse,
-        login: login,
-        motDePasse: motDePasse,
-        diplome: diplome,
-        departement: departement,
-        niveau: niveau,
-        specialite: specialite);
-  }
-
-  void addEnseignant({
-    String? nom = "",
-    String? prenom = "",
-    String? telephone = "",
-    String? adresse = "",
-    String? login = "",
-    String? motDePasse = "",
-    String? domaine = "",
-  }) async {
-    log("addEnseignant");
-    var e = await ApiService().addEnseignant(
-        nom: nom,
-        prenom: prenom,
-        telephone: telephone,
-        adresse: adresse,
-        login: login,
-        motDePasse: motDePasse,
-        domaine: domaine);
-    e!.isNotEmpty
-        ? log("addEnseignantENotEmpty::$e")
-        : log("addEnseignantEempty::$e");
-  }
-
-  void radiochange(Description? value) {
-    setState(() {
-      _description = value!;
-    });
-    /*if (kDebugMode) {
-      print("_description::$_description");
-      print("value::$value");
-    }*/
-  }*/
 
   DropdownMenuItem<String> buildMenuItem(String item) => DropdownMenuItem(
         value: item,
